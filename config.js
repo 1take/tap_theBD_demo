@@ -5,9 +5,9 @@
 window.BASSDRUM_CONFIG = {
   levels: [
     { name: "Easy",    bpm: 50  },  // debug-friendly
-    { name: "Normal",  bpm: 100 },
-    { name: "Hard",    bpm: 150 },
-    { name: "Extreme", bpm: 200 }
+    { name: "Normal",  bpm: 80 },
+    { name: "Hard",    bpm: 120 },
+    { name: "Extreme", bpm: 150 }
   ],
 
   // YES / NO / MISS result-sequence tempo
