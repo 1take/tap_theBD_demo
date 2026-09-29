@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <title>BASSDRUM</title>
+  <style>
+    :root{
+      --bg:#000000;
+      --panel:#0c0c0f;
+      --panel2:#17171b;
+      --text:#f7f8fb;
+      --muted:#aebbd0;
+      --line:#3b3b42;
+      --hp:#ffff00;
+      --danger:#ff5b67;
+      --ok:#62e6b6;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100dvh;overflow:hidden}
+    .app-bg{
+      position:fixed;
+      inset:-6vh -6vw;
+      z-index:0;
+      overflow:hidden;
+      pointer-events:none;
+      display:grid;
+      grid-template-columns:repeat(5, 1fr);
+      grid-auto-rows:18vh;
+      gap:0;
+      background:#080808;
+    }
+    .app-bg-tile{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .app-bg-tile img{
+      width:88%;
+      max-height:88%;
+      object-fit:contain;
+      opacity:.34;
+      filter:grayscale(.15);
+      transform-origin:center;
+      user-select:none;
+    }
+    .app-bg-veil{
+      position:fixed;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:rgba(0,0,0,.76);
+    }
+    .app{
+      position:relative;
+      z-index:2;
+    }
+
+    button{font:inherit}
+    .app{
+      min-height:100dvh;
+      max-width:640px;
+      margin:0 auto;
+      padding:calc(12px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr);
+      gap:12px;
+    }
+    .game-zone{
+      position:relative;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:12px;
+      padding:4px 0;
+    }
+    .hero{
+      display:block;
+      padding-top:4px;
+    }
+    .hero-row{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      width:100%;
+    }
+    .hero-title{
+      font-family:"Arial Rounded MT Bold","Trebuchet MS","Hiragino Maru Gothic ProN","Comic Sans MS",sans-serif;
+      font-size:clamp(24px, 6vw, 42px);
+      line-height:1.02;
+      font-weight:1000;
+      color:#fff;
+      letter-spacing:.02em;
+      text-align:center;
+      text-shadow:0 3px 16px rgba(0,0,0,.45);
+      white-space:nowrap;
+    }
+    .hero-logo{
+      width:clamp(34px, 8vw, 58px);
+      height:clamp(34px, 8vw, 58px);
+      object-fit:contain;
+      flex:0 0 auto;
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
+    }
+    .hero-logo-left{
+      transform:none;
+    }
+    .hero-logo-right{
+      transform:rotate(11deg);
+    }
+    .level-wrap{
+      display:block;
+      padding:0;
+      background:transparent;
+      border:0;
+      border-radius:0;
+    }
+    .levels{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:4px;
+    }
+    .level{
+      border:2px solid rgba(255,255,255,.34);
+      background:rgba(255,255,255,.07);
+      color:#f5f5f7;
+      border-radius:0;
+      padding:14px 3px;
+      font-weight:1000;
+      font-size:clamp(17px,4.5vw,25px);
+      line-height:1;
+      letter-spacing:0;
+      box-shadow:none;
+    }
+    .level.active{
+      background:#ffff00;
+      color:#111;
+      border-color:#ffff00;
+      box-shadow:none;
+    }
+    .stage{
+      position:relative;
+      height:min(52dvh, 560px);
+      min-height:300px;
+      max-height:560px;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:0;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      touch-action:manipulation;
+      user-select:none;
+    }
+    .stage.playing{cursor:pointer}
+    .backdrop-image{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      display:none;
+      z-index:0;
+      filter:saturate(.85) brightness(.68);
+      transform:scale(1.03);
+    }
+    .backdrop-image.previous-result{
+      filter:saturate(.65) brightness(.78);
+      opacity:.42;
+    }
+    .main-image{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:100%;
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      object-position:center;
+      display:none;
+      background:#fff;
+    }
+    .dummy{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      background:#fff;
+      color:#111;
+      font-size:clamp(28px,7vw,54px);
+      font-weight:1000;
+      line-height:1.18;
+      letter-spacing:.01em;
+      white-space:normal;
+      padding:24px;
+    }
+
+    .startup-message{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      width:100%;
+      text-align:center;
+      gap:.08em;
+    }
+    .startup-message span{
+      display:block;
+      width:100%;
+      text-align:center;
+    }
+
+    .overlay{
+      position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+      text-align:center;padding:24px;background:rgba(0,0,0,.74);z-index:4;
+      transition:background .12s ease;
+      backdrop-filter:blur(2px);
+    }
+    .overlay.show{display:flex}
+    .overlay.countdown{background:rgba(0,0,0,.76)}
+    .overlay.success{background:rgba(0,0,0,.70)}
+    .overlay.bad{background:rgba(0,0,0,.76)}
+    .overlay.miss{background:rgba(0,0,0,.76)}
+    .overlay.clear{background:rgba(0,0,0,.68)}
+    .overlay.gameover{background:rgba(0,0,0,.78)}
+    .overlay .big{font-size:clamp(52px,17vw,110px);font-weight:1000;line-height:.92}
+    .overlay img{
+      width:100%;
+      height:100%;
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      object-position:center;
+    }
+    .overlay.image-card{background:#fff}
+    .overlay.result-headline{background:rgba(0,0,0,.68)}
+    .overlay.sad-over-game{
+      background:transparent;
+      backdrop-filter:none;
+    }
+    .overlay.sad-over-game img{
+      opacity:.68;
+      filter:none;
+      object-fit:contain;
+    }
+    .overlay.success-logo{background:rgba(0,0,0,.76)}
+    .overlay.fail-logo{background:rgba(0,0,0,.76)}
+    .overlay.fail-logo img{filter:grayscale(1)}
+    .point-label{
+      position:absolute;
+      left:0;right:0;bottom:7%;
+      z-index:6;
+      text-align:center;
+      font-size:clamp(34px,11vw,68px);
+      line-height:1;
+      font-weight:1000;
+      letter-spacing:.01em;
+      color:#111;
+      text-shadow:0 2px 0 rgba(255,255,255,.35);
+      display:none;
+      pointer-events:none;
+    }
+    .overlay.show-points .point-label{display:block}
+
+
+    .start-float{
+      position:fixed;
+      left:50%;
+      bottom:calc(16px + env(safe-area-inset-bottom));
+      z-index:9998;
+      transform:translateX(-50%);
+      border:0;
+      outline:0;
+      background:transparent;
+      padding:8px 10px;
+      margin:0;
+      color:#b7ff00;
+      font-family:"Arial Rounded MT Bold","Trebuchet MS","Hiragino Maru Gothic ProN","Comic Sans MS",sans-serif;
+      font-size:clamp(19px,5.2vw,30px);
+      font-weight:1000;
+      line-height:1;
+      letter-spacing:.015em;
+      white-space:nowrap;
+      cursor:pointer;
+      text-shadow:
+        0 0 8px rgba(183,255,0,.46),
+        0 3px 12px rgba(0,0,0,.95);
+      animation:startFloat 2.35s ease-in-out infinite;
+      transition:opacity .22s ease;
+    }
+    .start-float.hidden-start{
+      opacity:0;
+      pointer-events:none;
+    }
+    @keyframes startFloat{
+      0%,100%{
+        transform:translateX(-50%) translateY(1px) scale(.985);
+      }
+      50%{
+        transform:translateX(-50%) translateY(-7px) scale(1.035);
+      }
+    }
+
+    .hp-wrap{
+      width:100%;
+      display:block;
+    }
+    .hp-shell{
+      position:relative;
+      width:100%;
+      height:82px;
+      border:4px solid #fff;
+      border-radius:0;
+      background:#101012;
+      overflow:hidden;
+      box-shadow:0 0 0 2px rgba(255,255,255,.10), 0 8px 20px rgba(0,0,0,.35);
+    }
+    .hp-title{
+      position:absolute;
+      z-index:5;
+      left:14px;
+      top:50%;
+      transform:translateY(-50%);
+      color:#fff;
+      font-size:32px;
+      font-weight:1000;
+      letter-spacing:.04em;
+      text-shadow:0 2px 6px #000;
+      pointer-events:none;
+    }
+    .hp-value{
+      position:absolute;
+      z-index:5;
+      right:14px;
+      top:50%;
+      transform:translateY(-50%);
+      color:#fff;
+      font-size:25px;
+      font-weight:1000;
+      text-shadow:0 2px 6px #000;
+      pointer-events:none;
+    }
+    .hp{
+      position:absolute;
+      inset:0;
+      display:grid;
+      gap:4px;
+      padding:7px;
+      background:#101012;
+    }
+    .hp-seg{
+      border-radius:0;
+      border:1px solid rgba(255,255,255,.14);
+      background:#29292e;
+      transition:background .22s ease, opacity .22s ease, transform .22s ease;
+    }
+    .hp-seg.on{
+      opacity:1;
+      transform:scaleY(1);
+    }
+    .hp-seg.off{
+      opacity:.22;
+      transform:scaleY(.78);
+    }
+    .hint{display:none}
+    .flash-ok{animation:flashok .25s ease}
+    .flash-bad{animation:flashbad .25s ease}
+    @keyframes flashok{0%{box-shadow:inset 0 0 0 999px rgba(255,255,255,.10)}100%{box-shadow:none}}100%{box-shadow:none}}
+    @keyframes flashbad{0%{box-shadow:inset 0 0 0 999px rgba(0,0,0,.24)}100%{box-shadow:none}}100%{box-shadow:none}}
+    .hidden{display:none!important}
+
+    .hp-shell.damage{
+      animation:hpDamage .34s ease;
+    }
+    .hp-shell.heal{
+      animation:hpHeal .42s ease;
+    }
+    .hp-seg.losing{
+      animation:hpLose .34s ease forwards;
+    }
+    @keyframes hpDamage{
+      0%{transform:translateX(0);box-shadow:0 0 0 2px rgba(255,255,255,.10)}
+      22%{transform:translateX(-8px);box-shadow:0 0 24px rgba(239,68,68,.8)}
+      45%{transform:translateX(7px)}
+      68%{transform:translateX(-4px)}
+      100%{transform:translateX(0);box-shadow:0 0 0 2px rgba(255,255,255,.10)}
+    }
+    @keyframes hpHeal{
+      0%{transform:scale(1)}
+      45%{transform:scale(1.035);box-shadow:0 0 30px rgba(34,197,94,.85)}
+      100%{transform:scale(1)}
+    }
+    @keyframes hpLose{
+      0%{opacity:1;transform:scale(1)}
+      55%{opacity:.25;transform:scale(.72) rotate(-4deg)}
+      100%{opacity:0;transform:scale(.45) rotate(8deg)}
+    }
+    .flying-logo{
+      position:fixed;
+      z-index:9999;
+      width:220px;
+      height:220px;
+      object-fit:contain;
+      pointer-events:none;
+      transform:translate(-50%,-50%) scale(1) rotate(0deg);
+      filter:drop-shadow(0 8px 18px rgba(0,0,0,.5));
+      transition:
+        left .72s cubic-bezier(.2,.8,.2,1),
+        top .72s cubic-bezier(.2,.8,.2,1),
+        transform .72s cubic-bezier(.2,.8,.2,1),
+        opacity .72s ease;
+    }
+
+    @media (max-height:700px){
+      .start-float{font-size:18px;bottom:calc(10px + env(safe-area-inset-bottom))}
+      .app{gap:7px}
+      .stage{height:min(43dvh,440px);min-height:250px}
+      .hp-shell{height:68px}
+      .hp-title{font-size:27px}
+      .hp-value{font-size:21px}
+      .level-label{font-size:19px}
+      .level-current{font-size:14px}
+      .hero-title{font-size:clamp(20px, 5.2vw, 32px)}
+      .hero-logo{width:34px;height:34px}
+      .hero-row{gap:7px}
+    }
+  </style>
+</head>
+<body>
+<div class="app-bg" id="appBg"></div>
+<div class="app-bg-veil"></div>
+<div class="app">
+  <div class="hero">
+    <div class="hero-row">
+      <img class="hero-logo hero-logo-left" src="assets/UI_LOGO.png" alt="">
+      <div class="hero-title">Tap the BASS → DRUM</div>
+      <img class="hero-logo hero-logo-right" src="assets/UI_LOGO.png" alt="">
+    </div>
+  </div>
+
+  <div class="game-zone">
+    <div class="level-wrap">
+    <div class="levels" id="levels"></div>
+  </div>
+    <div class="stage" id="stage" aria-label="game area">
+    <img class="backdrop-image" id="backdropImage" alt="">
+    <img class="main-image" id="mainImage" alt="">
+    <div class="dummy" id="dummy">
+      <div class="startup-message">
+        <span>Tap HERE</span>
+        <span>When</span>
+        <span>BASS → DRUM</span>
+        <span>Shown</span>
+      </div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div class="big" id="overlayText"></div>
+      <img id="overlayImage" alt="">
+      <div class="point-label" id="pointLabel"></div>
+    </div>
+  
+    <button class="start-float" id="startBtn" type="button">! Press Here to Start !</button>
+  </div>
+    <div class="hp-wrap">
+    <div class="hp-shell">
+      <div class="hp-title">HP</div>
+      <div class="hp" id="hp"></div>
+      <div class="hp-value" id="hpText">2 / 4</div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Game tuning ----------
+  // BPM values live in config.js so they can be edited without touching this HTML.
+  const CONFIG = window.BASSDRUM_CONFIG || {};
+  const LEVELS = CONFIG.levels || [
+    { name:"Easy",    bpm:50  },
+    { name:"Normal",  bpm:100 },
+    { name:"Hard",    bpm:150 },
+    { name:"Extreme", bpm:200 }
+  ];
+  const RESULT_BPM = CONFIG.resultBpm ?? 50;
+  const COUNTDOWN_BPM = CONFIG.countdownBpm ?? 50;
+  const MAX_HP = CONFIG.maxHp ?? 4;
+  const START_HP = CONFIG.startHp ?? 2;
+
+  // Built-in categories used when no folder is loaded.
+  // Normal play uses a global shuffle bag, so loaded asset images are consumed evenly.
+  const DEFAULT_GROUPS = [
+    { key:"BASS" },
+    { key:"DRUM" },
+    { key:"GUITAR" },
+    { key:"PIANO" },
+    { key:"SAX" },
+    { key:"BASSFISH" }
+  ];
+
+  // If an "assets" folder exists beside this HTML, supported prefixes are probed automatically.
+  // Extensions: .png / .jpg / .jpeg / .webp
+  // Examples: BASS_1.jpg, DRUM_2.png, BASSFISH_3.jpeg
+  // Probing stops after several consecutive misses, so small numbering gaps are allowed.
+  // GUITER is accepted as an alias of GUITAR for convenience.
+  const AUTO_PROBE_PREFIXES = ["BASS","DRUM","GUITAR","GUITER","PIANO","SAX","BASSFISH"];
+  const AUTO_PROBE_MAX_NUMBER = 250;
+  const AUTO_PROBE_STOP_AFTER_MISSES = 12;
+
+  // Optional UI assets beside the HTML.
+  const UI_FILES = {
+    LOGO: "assets/UI_LOGO.png",
+    HAPPY: "assets/UI_HAPPY.png",
+    SAD: "assets/UI_SAD.png"
+  };
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const appBg = $("appBg");
+  const stage = $("stage");
+  const backdropImage = $("backdropImage");
+  const mainImage = $("mainImage");
+  const dummy = $("dummy");
+  const overlay = $("overlay");
+  const overlayText = $("overlayText");
+  const overlayImage = $("overlayImage");
+  const pointLabel = $("pointLabel");
+  const startBtn = $("startBtn");
+  const hpEl = $("hp");
+  const hpShell = document.querySelector(".hp-shell");
+  const hpText = $("hpText");
+  const pairLabel = null;
+  const levelsEl = $("levels");
+
+  // ---------- State ----------
+  let levelIndex = 0;
+  let hp = START_HP;
+  let mode = "idle"; // idle | playing | result | gameover
+  let previousCard = null;
+  let currentCard = null;
+  let tappedThisCard = false;
+  let timer = null;
+  let stepToken = 0;
+  let stepsUntilTarget = 4;
+  let pools = new Map();
+  let normalBag = [];
+  let categoryBags = new Map();
+  let objectUrls = [];
+  let audioCtx = null;
+  let lastTapPoint = { x: window.innerWidth/2, y: window.innerHeight/2 };
+  let englishVoice = null;
+  let ttsPrimed = false;
+
+  function buildAppBackground(){
+    if(!appBg) return;
+    appBg.innerHTML = "";
+    const count = 40;
+    for(let i=0;i<count;i++){
+      const tile = document.createElement("div");
+      tile.className = "app-bg-tile";
+
+      const img = document.createElement("img");
+      img.src = UI_FILES.LOGO;
+      img.alt = "";
+      const rotation = Math.floor(Math.random()*360);
+      const scale = 0.78 + Math.random()*0.45;
+      const tx = Math.floor(Math.random()*24 - 12);
+      const ty = Math.floor(Math.random()*24 - 12);
+      img.style.transform = `translate(${tx}px, ${ty}px) rotate(${rotation}deg) scale(${scale})`;
+
+      tile.appendChild(img);
+      appBg.appendChild(tile);
+    }
+  }
+
+  // ---------- Utility ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const beatMs = bpm => 60000 / bpm;
+  const randInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+  function setMode(m){
+    mode = m;
+    stage.classList.toggle("playing", m === "playing");
+  }
+
+  function renderLevels(){
+    levelsEl.innerHTML = "";
+    LEVELS.forEach((lv,i) => {
+      const b = document.createElement("button");
+      b.className = "level" + (i === levelIndex ? " active" : "");
+      b.textContent = lv.name;
+      b.addEventListener("click", () => {
+        levelIndex = i;
+        resetLevel(false);
+      });
+      levelsEl.appendChild(b);
+    });
+  }
+
+  function renderHp(){
+    hpEl.innerHTML = "";
+    hpEl.style.gridTemplateColumns = `repeat(${MAX_HP}, 1fr)`;
+
+    // HP palette is anchored on the UI reference yellow (#FFFF00).
+    // Default 4-point progression:
+    // 1/4 red -> 2/4 yellow -> 3/4 yellow-green -> 4/4 green.
+    const ratio = MAX_HP > 0 ? hp / MAX_HP : 0;
+    let fillColor = "#35e85a";
+
+    if (ratio <= 0.25) {
+      fillColor = "#ff3b30";
+    } else if (ratio <= 0.50) {
+      fillColor = "#ffff00";
+    } else if (ratio <= 0.75) {
+      fillColor = "#b7ff00";
+    } else {
+      fillColor = "#35e85a";
+    }
+
+    for(let i=0;i<MAX_HP;i++){
+      const s = document.createElement("div");
+      const active = i < hp;
+      s.className = `hp-seg ${active ? "on" : "off"}`;
+      if(active) s.style.background = fillColor;
+      hpEl.appendChild(s);
+    }
+    hpText.textContent = `${hp} / ${MAX_HP}`;
+  }
+
+  function clearTimer(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    stepToken++;
+  }
+
+  function pickBackdropCard(){
+    const bass = pools.get("BASS") || [];
+    const drum = pools.get("DRUM") || [];
+    const candidates = [...bass, ...drum].filter(x => x && x.src);
+    if(!candidates.length) return null;
+    return candidates[Math.floor(Math.random()*candidates.length)];
+  }
+
+  function setBackdrop(mode="random"){
+    let src = null;
+    backdropImage.classList.remove("previous-result");
+
+    if(mode === "sad"){
+      src = UI_FILES.SAD || null;
+    } else if(mode === "logo"){
+      src = UI_FILES.LOGO || null;
+    } else if(mode === "previous"){
+      src = currentCard?.src || previousCard?.src || null;
+      backdropImage.classList.add("previous-result");
+    } else if(mode === "random"){
+      src = pickBackdropCard()?.src || null;
+    }
+
+    if(src){
+      backdropImage.src = src;
+      backdropImage.style.display = "block";
+    } else {
+      backdropImage.style.display = "none";
+      backdropImage.removeAttribute("src");
+    }
+  }
+
+  function clearBackdrop(){
+    backdropImage.style.display = "none";
+    backdropImage.removeAttribute("src");
+  }
+
+  function setOverlayMood(mood=""){
+    overlay.classList.remove(
+      "countdown","success","bad","miss","clear","gameover",
+      "image-card","result-headline","sad-over-game","success-logo","fail-logo","show-points"
+    );
+    if(mood) overlay.classList.add(mood);
+  }
+
+  function hideOverlay(){
+    overlay.classList.remove("show");
+    setOverlayMood("");
+    overlayText.textContent = "";
+    overlayText.style.display = "";
+    overlayImage.style.display = "none";
+    overlayImage.removeAttribute("src");
+    pointLabel.textContent = "";
+  }
+
+  function showSadOverlayOnCurrentGame(){
+    // Keep the live currentCard image underneath at full visibility.
+    clearBackdrop();
+    overlay.classList.add("show");
+    setOverlayMood("sad-over-game");
+    pointLabel.textContent = "";
+    overlayText.style.display = "none";
+
+    if(UI_FILES.SAD){
+      overlayImage.style.display = "block";
+      overlayImage.src = UI_FILES.SAD;
+      overlayImage.alt = "MISS";
+      overlayImage.onerror = () => {
+        overlayImage.style.display = "none";
+        overlayText.style.display = "block";
+        overlayText.textContent = "MISS!!";
+      };
+    } else {
+      overlayImage.style.display = "none";
+      overlayText.style.display = "block";
+      overlayText.textContent = "MISS!!";
+    }
+  }
+
+  function showResultImageWithBackdrop(card, fallbackText="", backdropCard=null){
+    overlay.classList.add("show");
+    setOverlayMood("result-headline");
+    pointLabel.textContent = "";
+
+    const src = backdropCard?.src || null;
+    backdropImage.classList.remove("previous-result");
+    if(src){
+      backdropImage.src = src;
+      backdropImage.style.display = "block";
+      backdropImage.classList.add("previous-result");
+    } else {
+      setBackdrop("previous");
+    }
+
+    overlayText.style.display = "none";
+    if(card && card.src){
+      overlayImage.style.display = "block";
+      overlayImage.src = card.src;
+      overlayImage.alt = card.label || "";
+    } else {
+      overlayImage.style.display = "none";
+      overlayText.style.display = "block";
+      overlayText.textContent = fallbackText || (card ? card.label : "");
+    }
+  }
+
+  function showResultHeadline(text, mood){
+    overlay.classList.add("show");
+    setBackdrop("previous");
+    setOverlayMood(mood);
+    pointLabel.textContent = "";
+    overlayText.style.display = "block";
+    overlayText.textContent = text;
+    overlayImage.style.display = "none";
+  }
+
+  function showOverlayText(text, mood=""){
+    overlay.classList.add("show");
+    if(mood === "gameover") setBackdrop("sad");
+    else setBackdrop("random");
+    setOverlayMood(mood);
+    pointLabel.textContent = "";
+    overlayText.style.display = "block";
+    overlayText.textContent = text;
+    overlayImage.style.display = "none";
+  }
+
+  function showOverlayImage(card, fallbackText="", mood="image-card"){
+    overlay.classList.add("show");
+    setBackdrop("random");
+    setOverlayMood(mood);
+    pointLabel.textContent = "";
+    overlayText.style.display = "none";
+    if(card && card.src){
+      overlayImage.style.display = "block";
+      overlayImage.src = card.src;
+      overlayImage.alt = card.label || "";
+    } else {
+      overlayImage.style.display = "none";
+      overlayText.style.display = "block";
+      overlayText.textContent = fallbackText || (card ? card.label : "");
+    }
+  }
+
+  function showResultImage(card, fallbackText=""){
+    overlay.classList.add("show");
+    setBackdrop("previous");
+    setOverlayMood("result-headline");
+    pointLabel.textContent = "";
+    overlayText.style.display = "none";
+    if(card && card.src){
+      overlayImage.style.display = "block";
+      overlayImage.src = card.src;
+      overlayImage.alt = card.label || "";
+      overlayImage.style.objectFit = "contain";
+    } else {
+      overlayImage.style.display = "none";
+      overlayText.style.display = "block";
+      overlayText.textContent = fallbackText || (card ? card.label : "");
+    }
+  }
+
+  async function showUiImageOrText(src, fallbackText){
+    if(src && await imageExists(src, 250)){
+      showOverlayImage({src, label:fallbackText}, fallbackText, "image-card");
+    } else {
+      showOverlayText(fallbackText, "bad");
+    }
+  }
+
+  function showLogoResult(kind){
+    const success = kind === "success";
+    const src = UI_FILES.LOGO;
+    overlay.classList.add("show");
+    setBackdrop("random");
+    setOverlayMood(success ? "success-logo" : "fail-logo");
+    overlay.classList.add("show-points");
+    pointLabel.textContent = success ? "+1pt 👍" : "−1pt 😢";
+    overlayText.style.display = "none";
+
+    if(src){
+      overlayImage.style.display = "block";
+      overlayImage.src = src;
+      overlayImage.alt = "BASSDRUM";
+      overlayImage.onerror = () => {
+        overlayImage.style.display = "none";
+        overlayText.style.display = "block";
+        overlayText.textContent = "BASSDRUM";
+      };
+    } else {
+      overlayImage.style.display = "none";
+      overlayText.style.display = "block";
+      overlayText.textContent = "BASSDRUM";
+    }
+  }
+
+  function showMain(card){
+    currentCard = card;
+    if(card && card.src){
+      mainImage.src = card.src;
+      mainImage.alt = card.label;
+      mainImage.style.display = "block";
+      dummy.style.display = "none";
+    } else {
+      mainImage.style.display = "none";
+      dummy.style.display = "flex";
+
+      if(card){
+        // Ordinary dummy game card: plain text only.
+        dummy.textContent = card.label === "BASSFISH" ? "BASS" : card.label;
+      } else {
+        // Startup screen: real DOM lines, not literal "<br>" text.
+        dummy.innerHTML = `
+          <div class="startup-message">
+            <span>Tap HERE</span>
+            <span>When</span>
+            <span>BASS → DRUM</span>
+            <span>Shown</span>
+          </div>`;
+      }
+    }
+
+    if(pairLabel){
+      const dbg = c => c?.label === "BASSFISH" ? "BASS(FISH)" : (c?.label ?? "—");
+      pairLabel.textContent = `${dbg(previousCard)} → ${dbg(currentCard)}`;
+    }
+  }
+
+  function flash(kind){
+    stage.classList.remove("flash-ok","flash-bad");
+    void stage.offsetWidth;
+    stage.classList.add(kind === "ok" ? "flash-ok" : "flash-bad");
+  }
+
+  // ---------- Audio ----------
+  function ensureAudio(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    if(audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+
+  function tone(freq, duration=.11, type="sine", gain=.06, delay=0){
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(gain,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t); o.stop(t+duration+.02);
+  }
+
+  // Short double "pu-pu" every time an instrument/special card changes.
+  function cardTickSound(){
+    ensureAudio();
+    tone(920,.045,"square",.025,0);
+    tone(720,.045,"square",.022,.065);
+  }
+
+  // Ready / 1 / 2 / 3 cue. "3" is slightly higher to signal the start.
+  function countdownSound(step){
+    ensureAudio();
+    const base =
+      step === "READY" ? 520 :
+      step === "3" ? 660 :
+      step === "2" ? 760 :
+      980;
+    // Distinct UI "pip-pip" so it is audible on mobile.
+    tone(base,.10,"square",.07,0);
+    tone(base*1.18,.07,"square",.055,.12);
+  }
+
+  function levelUpSound(){
+    ensureAudio();
+    tone(440,.16,"triangle",.07,0);
+    tone(554,.16,"triangle",.07,.10);
+    tone(659,.23,"triangle",.08,.20);
+    tone(880,.28,"triangle",.07,.32);
+  }
+
+  function damageSound(){
+    ensureAudio();
+    tone(150,.22,"sawtooth",.06,0);
+    tone(105,.28,"sawtooth",.06,.08);
+    tone(72,.36,"square",.04,.18);
+  }
+
+  function clearSound(){
+    ensureAudio();
+    [523,659,784,1047].forEach((f,i)=>tone(f,.18,"triangle",.06,i*.09));
+  }
+
+  function refreshVoices(){
+    if(!("speechSynthesis" in window)) return;
+    const voices = window.speechSynthesis.getVoices() || [];
+    englishVoice =
+      voices.find(v => /^en-US$/i.test(v.lang)) ||
+      voices.find(v => /^en-/i.test(v.lang)) ||
+      voices.find(v => /^en/i.test(v.lang)) ||
+      null;
+  }
+
+  function primeSpeech(){
+    if(!("speechSynthesis" in window) || ttsPrimed) return;
+    refreshVoices();
+
+    // On iOS/Safari and some Chrome builds, the first utterance can disappear
+    // until speech synthesis has been activated by a user gesture.
+    // Prime it during the START tap with an almost-silent, very short utterance.
+    const warm = new SpeechSynthesisUtterance("ready");
+    warm.lang = "en-US";
+    if(englishVoice) warm.voice = englishVoice;
+    warm.volume = 0.001;
+    warm.rate = 2;
+    warm.onend = () => { ttsPrimed = true; };
+    warm.onerror = () => { ttsPrimed = true; };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(warm);
+  }
+
+  function speak(text, rate=1.05){
+    if(!("speechSynthesis" in window)) return;
+    refreshVoices();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    if(englishVoice) u.voice = englishVoice;
+    u.rate = rate;
+    u.pitch = 1.02;
+    u.volume = 1;
+
+    // Cancel stale speech, then defer one tick. This avoids first-frame losses
+    // seen on some mobile browsers when speak() immediately follows cancel().
+    window.speechSynthesis.cancel();
+    setTimeout(() => {
+      window.speechSynthesis.speak(u);
+    }, 40);
+  }
+
+  function speakFishBass(){
+    if(!("speechSynthesis" in window)) return;
+    refreshVoices();
+
+    // Give the TTS engine semantic context so "bass" is selected as fish /bæs/,
+    // then stop before the word "fish" is spoken when boundary events are supported.
+    const u = new SpeechSynthesisUtterance("bass fish");
+    u.lang = "en-US";
+    if(englishVoice) u.voice = englishVoice;
+    u.rate = 1.05;
+    u.pitch = 1.02;
+    u.volume = 1;
+
+    let cancelledAtFish = false;
+    u.onboundary = e => {
+      // "fish" starts at character 5.
+      if(!cancelledAtFish && e.charIndex >= 5){
+        cancelledAtFish = true;
+        window.speechSynthesis.cancel();
+      }
+    };
+
+    window.speechSynthesis.cancel();
+    setTimeout(() => window.speechSynthesis.speak(u), 40);
+  }
+
+  function speakLabel(label){
+    if(label === "BASSFISH"){
+      speakFishBass();
+      return;
+    }
+    speak(pronounce(label));
+  }
+
+  if("speechSynthesis" in window){
+    refreshVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", refreshVoices);
+  }
+
+  // ---------- Assets ----------
+  function addCard(label, src=null, name=""){
+    const key = label.toUpperCase();
+    if(!pools.has(key)) pools.set(key, []);
+    pools.get(key).push({label:key, src, name});
+  }
+
+  function initDummyPools(){
+    pools.clear();
+    resetShuffleBags();
+    DEFAULT_GROUPS.forEach(group => {
+      // More dummy variants for BASS/DRUM/GUITAR so repeats feel less mechanical.
+      const n =
+        group.key === "GUITAR" ? 8 :
+        group.key === "BASSFISH" ? 5 :
+        (group.key === "BASS" || group.key === "DRUM" ? 5 : 3);
+      for(let i=1;i<=n;i++) addCard(group.key, null, `${group.key}_${i}`);
+    });
+  }
+
+  function clearObjectUrls(){
+    objectUrls.forEach(u => URL.revokeObjectURL(u));
+    objectUrls = [];
+  }
+
+  function loadSelectedFiles(files){
+    const imageFiles = [...files].filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+    const parsed = [];
+    for(const f of imageFiles){
+      const m = f.name.match(/^(.+?)_(\d+)\.(png|jpe?g|webp)$/i);
+      if(!m) continue;
+      let label = m[1].toUpperCase();
+      if(label === "GUITER") label = "GUITAR";
+      const allowed = new Set(["BASS","DRUM","GUITAR","PIANO","SAX","BASSFISH"]);
+      if(!allowed.has(label)) continue;
+      parsed.push({file:f, label, number:Number(m[2])});
+    }
+    if(!parsed.length){
+      alert("対応画像が見つかりませんでした。例: BASS_1.jpg / DRUM_2.png / BASSFISH_3.jpeg");
+      return;
+    }
+    clearObjectUrls();
+    pools.clear();
+    resetShuffleBags();
+    parsed.sort((a,b)=>a.label.localeCompare(b.label) || a.number-b.number);
+    for(const p of parsed){
+      const url = URL.createObjectURL(p.file);
+      objectUrls.push(url);
+      addCard(p.label, url, p.file.name);
+    }
+    const labels = [...pools.keys()];
+    resetLevel(false);
+  }
+
+  function imageExists(src, timeout=550){
+    return new Promise(resolve => {
+      const img = new Image();
+      let done = false;
+      const finish = ok => { if(done) return; done=true; resolve(ok); };
+      img.onload = () => finish(true);
+      img.onerror = () => finish(false);
+      img.src = src + `?v=${Date.now()}`;
+      setTimeout(()=>finish(false), timeout);
+    });
+  }
+
+  async function findImageFor(prefix, number){
+    const exts = ["png","jpg","jpeg","webp"];
+    for(const ext of exts){
+      const src = `assets/${prefix}_${number}.${ext}`;
+      if(await imageExists(src)) return src;
+    }
+    return null;
+  }
+
+  async function autoProbeAssets(){
+    const found = [];
+    for(const rawPrefix of AUTO_PROBE_PREFIXES){
+      const label = rawPrefix === "GUITER" ? "GUITAR" : rawPrefix;
+      let misses = 0;
+      for(let i=1;i<=AUTO_PROBE_MAX_NUMBER && misses<AUTO_PROBE_STOP_AFTER_MISSES;i++){
+        const src = await findImageFor(rawPrefix, i);
+        if(src){
+          found.push({label, src, name:src.split("/").pop()});
+          misses = 0;
+        } else {
+          misses++;
+        }
+      }
+    }
+    if(found.length){
+      pools.clear();
+      resetShuffleBags();
+      found.forEach(x => addCard(x.label,x.src,x.name));
+      resetLevel(false);
+    }
+  }
+
+  // ---------- Fair shuffle bags ----------
+  function shuffleInPlace(array){
+    for(let i=array.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function allCards(){
+    return [...pools.values()].flat();
+  }
+
+  function resetShuffleBags(){
+    normalBag = [];
+    categoryBags.clear();
+  }
+
+  function refillNormalBag(){
+    // Every loaded asset appears once per bag cycle.
+    // This is much fairer than repeatedly sampling categories/images with replacement.
+    normalBag = shuffleInPlace([...allCards()]);
+  }
+
+  function cardIdentity(card){
+    if(!card) return "";
+    return card.src || `${card.label}::${card.name || ""}`;
+  }
+
+  function isSameCard(a, b){
+    if(!a || !b) return false;
+    return cardIdentity(a) === cardIdentity(b);
+  }
+
+  function drawNormalCard(exclusions=new Set(), avoidCard=null){
+    if(normalBag.length === 0) refillNormalBag();
+
+    const isAllowed = card =>
+      !exclusions.has(card.label) &&
+      !isSameCard(card, avoidCard);
+
+    let idx = normalBag.findIndex(isAllowed);
+
+    if(idx < 0){
+      refillNormalBag();
+      idx = normalBag.findIndex(isAllowed);
+    }
+
+    if(idx < 0){
+      let fallback = allCards().filter(card =>
+        !exclusions.has(card.label) && !isSameCard(card, avoidCard)
+      );
+      if(!fallback.length){
+        fallback = allCards().filter(card => !exclusions.has(card.label));
+      }
+      return fallback.length
+        ? fallback[Math.floor(Math.random()*fallback.length)]
+        : {label:"GUITAR",src:null,name:"GUITAR"};
+    }
+
+    const [card] = normalBag.splice(idx,1);
+    return card;
+  }
+
+  function drawCategoryCard(key, avoidCard=null){
+    const source = pools.get(key) || [];
+    if(!source.length) return {label:key,src:null,name:key};
+
+    let bag = categoryBags.get(key);
+    if(!bag || bag.length === 0){
+      bag = shuffleInPlace([...source]);
+      categoryBags.set(key, bag);
+    }
+
+    let idx = bag.findIndex(card => !isSameCard(card, avoidCard));
+    if(idx < 0){
+      bag = shuffleInPlace([...source]);
+      categoryBags.set(key, bag);
+      idx = bag.findIndex(card => !isSameCard(card, avoidCard));
+    }
+
+    // Only one asset in the category: repetition is unavoidable.
+    if(idx < 0) idx = bag.length - 1;
+    const [card] = bag.splice(idx,1);
+    return card;
+  }
+
+  // ---------- Card selection ----------
+  function nextCard(){
+    // A guaranteed BASS -> DRUM target every 5–9 cards.
+    // Never show the exact same image asset twice in a row.
+    if(stepsUntilTarget === 2){
+      stepsUntilTarget--;
+      return drawCategoryCard("BASS", currentCard);
+    }
+    if(stepsUntilTarget === 1){
+      stepsUntilTarget = randInt(5,9);
+      return drawCategoryCard("DRUM", currentCard);
+    }
+
+    stepsUntilTarget--;
+
+    // Outside the planned target pair, prevent accidental BASS -> DRUM.
+    const exclusions = new Set();
+    if(previousCard?.label === "BASS") exclusions.add("DRUM");
+
+    return drawNormalCard(exclusions, currentCard);
+  }
+
+  async function animateHpLoss(){
+    const active = [...hpEl.querySelectorAll(".hp-seg.on")];
+    const last = active.at(-1);
+
+    hpShell.classList.remove("damage");
+    void hpShell.offsetWidth;
+    hpShell.classList.add("damage");
+
+    if(last) last.classList.add("losing");
+    await sleep(330);
+
+    hp = Math.max(0, hp - 1);
+    renderHp();
+    hpShell.classList.remove("damage");
+  }
+
+  function animateHpGain(){
+    hpShell.classList.remove("heal");
+    void hpShell.offsetWidth;
+    hpShell.classList.add("heal");
+    setTimeout(()=>hpShell.classList.remove("heal"), 450);
+  }
+
+  async function animateLogoToHp(){
+    return new Promise(resolve => {
+      const logo = document.createElement("img");
+      logo.className = "flying-logo";
+      logo.src = UI_FILES.LOGO;
+      logo.alt = "";
+      logo.style.left = `${lastTapPoint.x}px`;
+      logo.style.top = `${lastTapPoint.y}px`;
+      logo.style.transform = "translate(-50%,-50%) scale(1.5) rotate(0deg)";
+      document.body.appendChild(logo);
+
+      const rect = hpShell.getBoundingClientRect();
+      const tx = rect.left + rect.width/2;
+      const ty = rect.top + rect.height/2;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          logo.style.left = `${tx}px`;
+          logo.style.top = `${ty}px`;
+          logo.style.transform = "translate(-50%,-50%) scale(.12) rotate(720deg)";
+          logo.style.opacity = ".18";
+        });
+      });
+
+      setTimeout(() => {
+        logo.remove();
+        resolve();
+      }, 760);
+    });
+  }
+
+  async function applySuccessHp(){
+    await animateLogoToHp();
+    hp = Math.min(MAX_HP, hp + 1);
+    renderHp();
+    animateHpGain();
+  }
+
+  async function showMissAndDamage(){
+    showResultHeadline("MISS!!", "miss");
+    damageSound();
+    speak("Miss!");
+    await animateHpLoss();
+    await sleep(Math.max(280, beatMs(RESULT_BPM) * 0.45));
+  }
+
+  // ---------- Game loop ----------
+  function isTargetPair(){
+    return previousCard?.label === "BASS" && currentCard?.label === "DRUM";
+  }
+
+  function scheduleNextTick(token){
+    const ms = beatMs(LEVELS[levelIndex].bpm);
+    timer = setTimeout(() => {
+      if(token !== stepToken || mode !== "playing") return;
+
+      // If a target DRUM interval ended without a tap, advance once first.
+      // This makes the miss visually obvious: the player sees that the game
+      // has already moved past the correct DRUM.
+      if(isTargetPair() && !tappedThisCard){
+        const missedBass = previousCard;
+        const missedDrum = currentCard;
+
+        previousCard = currentCard;
+        currentCard = nextCard();
+        tappedThisCard = false;
+        showMain(currentCard);
+
+        handleMiss(missedBass, missedDrum, currentCard);
+        return;
+      }
+
+      previousCard = currentCard;
+      currentCard = nextCard();
+      tappedThisCard = false;
+      showMain(currentCard);
+      scheduleNextTick(token);
+    }, ms);
+  }
+
+  function startLoop(){
+    clearTimer();
+    hideOverlay();
+    clearBackdrop();
+    setMode("playing");
+    previousCard = null;
+    currentCard = nextCard();
+    tappedThisCard = false;
+    showMain(currentCard);
+    const token = stepToken;
+    scheduleNextTick(token);
+  }
+
+  function resetLevel(startImmediately=false){
+    clearTimer();
+    hp = START_HP;
+    previousCard = null;
+    currentCard = null;
+    stepsUntilTarget = randInt(4,7);
+    renderLevels();
+    renderHp();
+    showMain(null);
+    if(pairLabel) pairLabel.textContent = "— → —";
+    hideOverlay();
+    setMode("idle");
+    startBtn.textContent = "! Press Here to Start !";
+    startBtn.classList.remove("hidden-start");
+    // Browser audio/TTS needs a real user gesture.
+    // Never auto-start from asset loading or level selection.
+    if(startImmediately){
+      // Intentionally ignored: START button is required.
+    }
+  }
+
+  async function playReadyCountdown(){
+    ensureAudio();
+    const b = beatMs(COUNTDOWN_BPM);
+    for(const x of ["READY","3","2","1"]){
+      showOverlayText(x, "countdown");
+      countdownSound(x);
+      await sleep(b);
+    }
+  }
+
+  async function countdownAndStart(){
+    clearTimer();
+    setMode("result");
+    await playReadyCountdown();
+    hideOverlay();
+    startLoop();
+  }
+
+  function tapGame(){
+    if(mode !== "playing") return;
+    tappedThisCard = true;
+    if(isTargetPair()){
+      flash("ok");
+      handleSuccess();
+    } else {
+      flash("bad");
+      handleWrongTap();
+    }
+  }
+
+  async function handleSuccess(){
+    clearTimer();
+    setMode("result");
+
+    showResultHeadline("NICE! BASS DRUM!", "success");
+    speak("Nice! Bass drum!");
+    levelUpSound();
+
+    await applySuccessHp();
+
+    if(hp >= MAX_HP){
+      await handleClear();
+      return;
+    }
+
+    await sleep(260);
+    await playReadyCountdown();
+    startLoop();
+  }
+
+  async function handleWrongTap(){
+    clearTimer();
+    setMode("result");
+
+    await showMissAndDamage();
+
+    if(hp <= 0){
+      gameOver();
+      return;
+    }
+
+    await playReadyCountdown();
+    startLoop();
+  }
+
+  async function handleMiss(missedBass, missedDrum, nextShownCard){
+    clearTimer();
+    setMode("result");
+
+    await showMissAndDamage();
+
+    if(hp <= 0){
+      gameOver();
+      return;
+    }
+
+    await playReadyCountdown();
+    startLoop();
+  }
+
+  async function handleClear(){
+    clearTimer();
+    setMode("result");
+    clearSound();
+
+    overlay.classList.add("show");
+    setBackdrop("logo");
+    setOverlayMood("clear");
+    pointLabel.textContent = "";
+    overlayImage.style.display = "none";
+    overlayText.style.display = "block";
+    overlayText.textContent = "CLEAR!!";
+    speak("Clear!");
+
+    await sleep(beatMs(RESULT_BPM) * 1.5);
+
+    if(levelIndex >= LEVELS.length - 1){
+      setBackdrop("logo");
+      showOverlayText("ALL CLEAR!!", "clear");
+      setBackdrop("logo");
+      speak("All clear!");
+      startBtn.textContent = "! Press Here to Restart !";
+    startBtn.classList.remove("hidden-start");
+      setMode("idle");
+      return;
+    }
+
+    levelIndex++;
+    hp = START_HP;
+    previousCard = null;
+    currentCard = null;
+    stepsUntilTarget = randInt(4,7);
+    renderLevels();
+    renderHp();
+
+    overlay.classList.add("show");
+    setBackdrop("logo");
+    setOverlayMood("clear");
+    overlayText.style.display = "block";
+    overlayText.textContent = LEVELS[levelIndex].name.toUpperCase();
+    overlayImage.style.display = "none";
+    speak(LEVELS[levelIndex].name);
+    await sleep(beatMs(RESULT_BPM));
+
+    await playReadyCountdown();
+    startLoop();
+  }
+
+  function gameOver(){
+    clearTimer();
+    setMode("gameover");
+    showOverlayText("GAME OVER", "gameover");
+    setBackdrop("sad");
+    speak("Game over");
+    startBtn.textContent = "! Press Here to Restart !";
+    startBtn.classList.remove("hidden-start");
+  }
+
+  function pronounce(label){
+    // Force the homograph distinction in browser TTS:
+    // musical BASS -> "base" (/beɪs/)
+    // fish BASSFISH -> use contextual wording so TTS selects /bæs/.
+    if(label === "BASS") return "base";
+    if(label === "BASSFISH") return "bass fish";
+    if(label === "GUITAR") return "guitar";
+    return label.replace(/[_-]+/g," ").toLowerCase();
+  }
+
+  function showUiOrText(kind, fallback, mood=""){
+    const src = UI_FILES[kind];
+    if(!src){ showOverlayText(fallback, mood); return; }
+    const img = new Image();
+    img.onload = () => showOverlayImage({src,label:fallback}, fallback, mood);
+    img.onerror = () => showOverlayText(fallback, mood);
+    img.src = src;
+  }
+
+  // ---------- Events ----------
+  stage.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    lastTapPoint = { x:e.clientX, y:e.clientY };
+    primeSpeech();
+    tapGame();
+  }, {passive:false});
+
+  startBtn.addEventListener("click", async () => {
+    startBtn.classList.add("hidden-start");
+    ensureAudio();
+    primeSpeech();
+
+    // Give the browser one event-loop turn to resume AudioContext
+    // before the first READY countdown beep.
+    if(audioCtx && audioCtx.state === "suspended"){
+      try { await audioCtx.resume(); } catch(e) {}
+    }
+    await sleep(80);
+
+    hp = START_HP;
+    previousCard = null;
+    currentCard = null;
+    stepsUntilTarget = randInt(4,7);
+    renderHp();
+    countdownAndStart();
+  });
+
+  window.addEventListener("keydown", e => {
+    if(e.code === "Space"){
+      e.preventDefault();
+      tapGame();
+    }
+  });
+
+  // ---------- Init ----------
+  initDummyPools();
+  buildAppBackground();
+  renderLevels();
+  renderHp();
+  showMain(null);
+
+  // Non-blocking: if ./assets contains matching files, use them automatically.
+  autoProbeAssets();
+})();
+</script>
+</body>
+</html>
